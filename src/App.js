@@ -13,6 +13,7 @@ import { initializeAppCheck, ReCaptchaV3Provider } from "firebase/app-check"
 
 import Home from './Pages/Home'
 import Text from './Pages/Text'
+import UserListPage from './Pages/UserListPage';
 
 import './App.css'
 import comeddiaXML from "./commedia.xml"
@@ -23,6 +24,7 @@ import UserComments from './Pages/UserComments'
 import MySaved from './Pages/MySaved'
 import { UserDataContext } from './Utils/context'
 import Admin from './Pages/Admin'
+import { UserListProvider } from './Utils/UserListContext'
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
@@ -48,10 +50,10 @@ const App = () => {
   const [user] = useAuthState(auth)
 
   const [commediaData, setCommediaData] = useState(null)
-
   const [userData, setUserData] = useState(null)
   const [userUpvotes, setUserUpvotes] = useState(null)
   const [userSaves, setUserSaves] = useState(null)
+  const [allUsers, setAllUsers] = useState(null)
 
   useEffect(() => {
     if (!user) {
@@ -67,7 +69,6 @@ const App = () => {
         setUserUpvotes(upvotes)
       }
     })
-
   }, [user])
 
   useEffect(() => {
@@ -84,7 +85,6 @@ const App = () => {
         setUserSaves(saves)
       }
     })
-
   }, [user])
 
   useEffect(() => {
@@ -106,17 +106,13 @@ const App = () => {
     const options = {
       preserveOrder: true,
     }
-    const parser = new XMLParser(options);
+    const parser = new XMLParser(options)
 
     fetch(comeddiaXML)
-      .then((response) => {
-        return response.text()
-      })
+      .then((response) => response.text())
       .then((xmlText) => {
         const jsonData = parser.parse(xmlText)
         const commediaXML = jsonData[1]['TEI.2'][1]['text'][0]['body']
-
-        // console.log("XML original:", commediaXML)
 
         let commedia = {
           "inferno": [],
@@ -133,7 +129,6 @@ const App = () => {
           for (let c of cantos) {
             cantoNum += 1
             const canto = c["div2"]
-
             const cantoName = canto[0]["head"][0]["#text"]
             const terzinas = canto.slice(1)
             const terzinasList = []
@@ -160,79 +155,59 @@ const App = () => {
                     }
                   }
                   line = line.trim()
-                  linesList.push(line)
-                  terzinaLines.push(line)
                 } else if ("hi" in linePieces[0]) {
                   line = linePieces[0]["hi"][0]["#text"]
-                  linesList.push(line)
-                  terzinaLines.push(line)
                 } else {
                   line = linePieces[0]["#text"]
-                  linesList.push(line)
-                  terzinaLines.push(line)
                 }
+
+                linesList.push(line)
+                terzinaLines.push(line)
               }
 
               terzinasList.push(terzinaLines)
             }
 
             commedia[partName.toLowerCase()].push({
-              "number": cantoNum,
-              "name": cantoName.toLowerCase(),
-              "length": linesList.length,
-              "terzinas": terzinasList,
-              "lines": linesList,
+              number: cantoNum,
+              name: cantoName.toLowerCase(),
+              length: linesList.length,
+              terzinas: terzinasList,
+              lines: linesList,
             })
           }
         }
+
         setCommediaData(commedia)
       })
       .catch((error) => {
-        console.error('Error fetching XML data:', error);
-      });
+        console.error('Error fetching XML data:', error)
+      })
   }, [])
 
   return (
-    <div className="App">
-      <UserDataContext.Provider value={userData}>
-        <Router>
-          <RouterRoutes>
-            <Route path="/" element={<Home />} />
-            <Route
-              path="/inferno/:canto"
-              element={<Text part="inferno" commediaData={commediaData} userUpvotes={userUpvotes} userSaves={userSaves} />}
-            />
-            <Route
-              path="/purgatorio/:canto"
-              element={<Text part="purgatorio" commediaData={commediaData} userUpvotes={userUpvotes} userSaves={userSaves} />}
-            />
-            <Route
-              path="/paradiso/:canto"
-              element={<Text part="paradiso" commediaData={commediaData} userUpvotes={userUpvotes} userSaves={userSaves} />}
-            />
-            <Route path="/auth" element={<Auth />} />
-            <Route
-              path="/comments"
-              element={<UserComments userUpvotes={userUpvotes} userSaves={userSaves} />}
-            />
-            <Route
-              path="/user/:otherUserId"
-              element={<UserComments userUpvotes={userUpvotes} userSaves={userSaves} />}
-            />
-            <Route
-              path="/saved"
-              element={<MySaved userUpvotes={userUpvotes} userSaves={userSaves} />}
-            />
-            <Route
-              path="/admin"
-              element={<Admin />}
-            />
-            <Route path="*" element={<Home />} />
-          </RouterRoutes>
-        </Router>
-      </UserDataContext.Provider>
-    </div>
-  );
+    <UserListProvider>
+      <div className="App">
+        <UserDataContext.Provider value={{ userData, allUsers }}>
+          <Router>
+            <RouterRoutes>
+              <Route path="/" element={<Home />} />
+              <Route path="/inferno/:canto" element={<Text part="inferno" commediaData={commediaData} userUpvotes={userUpvotes} userSaves={userSaves} />} />
+              <Route path="/purgatorio/:canto" element={<Text part="purgatorio" commediaData={commediaData} userUpvotes={userUpvotes} userSaves={userSaves} />} />
+              <Route path="/paradiso/:canto" element={<Text part="paradiso" commediaData={commediaData} userUpvotes={userUpvotes} userSaves={userSaves} />} />
+              <Route path="/auth" element={<Auth />} />
+              <Route path="/comments" element={<UserComments userUpvotes={userUpvotes} userSaves={userSaves} />} />
+              <Route path="/user/:otherUserId" element={<UserComments userUpvotes={userUpvotes} userSaves={userSaves} />} />
+              <Route path="/saved" element={<MySaved userUpvotes={userUpvotes} userSaves={userSaves} />} />
+              <Route path="/admin" element={<Admin />} />
+              <Route path="*" element={<Home />} />
+              <Route path="/users" element={<UserListPage />} />
+            </RouterRoutes>
+          </Router>
+        </UserDataContext.Provider>
+      </div>
+    </UserListProvider>
+  )
 }
 
 export default App

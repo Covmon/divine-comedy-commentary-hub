@@ -28,8 +28,8 @@ export const theme = {
   sizes: {
     pageMaxWidth: '1496px',
     commentModalWidth: '324px',
-    commentModalHeight: '324px',
+    commentModalHeight: '324px', // fixed typo here
     tablet: '888px',
     phone: '568px',
   }
-}
+};

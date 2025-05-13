@@ -16,7 +16,7 @@ import { UserDataContext } from '../../Utils/context'
 
 import { Container, OuterContainer } from './styles'
 
-const  ViewCommentModal = ({
+const ViewCommentModal = ({
   comment, commentKey, close,
   userUpvotes, userSaves,
   commentsPage,
@@ -38,6 +38,7 @@ const  ViewCommentModal = ({
 
   const createdAt = comment["createdAt"] ? new Date(comment["createdAt"]) : new Date()
   const createdAtDate = format(createdAt, 'MM/dd/yy')
+  const createdAtTime = comment.timestamp || format(createdAt, 'h:mm a')
   const upvotes = comment["upvotes"] || 0
   const nameOrYou = comment["user"] === user.uid ? "You" : comment["name"] || "Dantista Anonimo"
 
@@ -118,6 +119,13 @@ const  ViewCommentModal = ({
     const replyData = {
       reply: replyText,
       createdAt: serverTimestamp(),
+      timestamp: new Date().toLocaleString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true
+      }),
       user: user.uid,
       name: user.displayName,
     }
@@ -172,7 +180,7 @@ const  ViewCommentModal = ({
             })}
           </div>
           <div className="right">
-            <span className="date">{createdAtDate}</span>
+            <span className="date">{createdAtDate} at {createdAtTime}</span>
             {close && <BiSolidXCircle onClick={close} />}
             {comment["deleted"] ? (
               <>Deleted</>
@@ -248,6 +256,7 @@ const  ViewCommentModal = ({
           {Object.keys(comment.replies).map(k => {
             const reply = comment.replies[k]
             const nameOrYou = reply.user === user.uid ? "You" : reply["name"] || "Dantista Anonimo"
+            const replyTime = reply.timestamp || format(new Date(reply.createdAt), 'h:mm a')
 
             return (
               <div className="comment reply" key={k}>
@@ -256,7 +265,7 @@ const  ViewCommentModal = ({
                     <span onClick={() => clickUsername(reply.user)}>{nameOrYou}</span> 
                     {' '}replied
                   </div>
-                  <div className="date">{format(new Date(reply.createdAt), 'MM/dd/yy')}</div>
+                  <div className="date">{format(new Date(reply.createdAt), 'MM/dd/yy')} at {replyTime}</div>
                 </div>
                 {reply.reply}
               </div>
@@ -264,7 +273,6 @@ const  ViewCommentModal = ({
           })}
       </Container>
       )}
-      
     </OuterContainer>
   )
 }

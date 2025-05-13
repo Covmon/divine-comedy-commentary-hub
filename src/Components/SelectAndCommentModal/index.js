@@ -45,6 +45,14 @@ const SelectAndCommentModal = ({
     if (!highlightedRanges.length || !comment || userData?.demo) return
     setSubmitLoading(true)
 
+    const timestamp = new Date().toLocaleString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true
+    })
+
     const commentData = {
       user: user.uid,
       name: user.displayName,
@@ -52,6 +60,7 @@ const SelectAndCommentModal = ({
       comment,
       upvotes: 0,
       createdAt: serverTimestamp(),
+      timestamp, // Add timestamp here
       private: isPrivate,
       group: userData?.group || null,
     }

@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import Input from '../../Components/Input'
 import { child, onValue, push, ref, set } from 'firebase/database'
 
@@ -9,15 +10,16 @@ import Spacer from '../../Components/Spacer'
 import AuthLayout from '../../Layouts/AuthLayout'
 
 import { makeJoinCode } from '../../Utils/utility'
-import { Box, Container, Error } from './styles'
+import { Box, Container, Error, UserList, UserItem } from './styles'
 
 const Admin = () => {
   const [allGroups, setAllGroups] = useState(null)
+  const [allUsers, setAllUsers] = useState(null)
+  const navigate = useNavigate()
 
   const [newGroupName, setNewGroupName] = useState("")
   const [createGroupLoading, setCreateGroupLoading] = useState(false)
   const [createGroupError, setCreateGroupError] = useState(null)
-
 
   useEffect(() => {
     const groupsRef = ref(db, `groups`)
@@ -25,6 +27,16 @@ const Admin = () => {
       if (snapshot.exists()) {
         const groups = snapshot.val()
         setAllGroups(groups)
+      }
+    })
+  }, [])
+
+  useEffect(() => {
+    const usersRef = ref(db, `users`)
+    return onValue(usersRef, snapshot => {
+      if (snapshot.exists()) {
+        const users = snapshot.val()
+        setAllUsers(users)
       }
     })
   }, [])
@@ -54,6 +66,17 @@ const Admin = () => {
     setCreateGroupLoading(false)
   }
 
+  const getUsersInGroup = (groupId) => {
+    if (!allUsers) return []
+    return Object.entries(allUsers)
+      .filter(([_, user]) => user.group === groupId)
+      .map(([userId, user]) => ({ userId, ...user }))
+  }
+
+  const navigateToUserComments = (userId) => {
+    navigate(`/user/${userId}`)
+  }
+
   return (
     <AuthLayout hideCantoNav>
       <Container>
@@ -67,11 +90,31 @@ const Admin = () => {
         <Box>
           <h3>Current Groups</h3>
           {allGroups && (
-            <ul>
-              {Object.keys(allGroups).map(k => (
-                <li>{`${allGroups[k].name} (Join code: ${allGroups[k].joinCode})`}</li>
+            <div>
+              {Object.entries(allGroups).map(([groupId, group]) => (
+                <div key={groupId}>
+                  <h4>{group.name} (Join code: {group.joinCode})</h4>
+                  {allUsers && (
+                    <UserList>
+                      <h5>Members:</h5>
+                      {getUsersInGroup(groupId).length > 0 ? (
+                        getUsersInGroup(groupId).map(user => (
+                          <UserItem 
+                            key={user.userId}
+                            onClick={() => navigateToUserComments(user.userId)}
+                          >
+                            {user.name || 'Anonymous User'} ({user.email})
+                          </UserItem>
+                        ))
+                      ) : (
+                        <p>No members in this group yet</p>
+                      )}
+                    </UserList>
+                  )}
+                  <Spacer height="12px" />
+                </div>
               ))}
-            </ul>
+            </div>
           )}
         </Box>
       </Container>
